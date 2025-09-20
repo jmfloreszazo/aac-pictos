@@ -2,7 +2,7 @@
 const translations = {
   es: {
     title: "AAC · Tobii + IA (Vanilla JS) + Gaze Cursor",
-    subtitle: "Mira un pictograma 4s (WebSocket) → elige 3 → generamos frase → la leemos.",
+    subtitle: "Mira un pictograma → elige 3 → generamos frase → la leemos.",
     subtitleExtra: "Ahora con <strong>puntero de mirada</strong> visible.",
     connectButton: "Conectar Tobii (ws://127.0.0.1:8765)",
     statusDisconnected: "Desconectado",
@@ -28,7 +28,33 @@ const translations = {
       agua: "Vaso de agua",
       comida: "Plato de comida",
       si: "Sí",
-      no: "No"
+      no: "No",
+      baño: "Ir al baño",
+      tele: "Ver televisión",
+      dormir: "Quiero dormir",
+      ayuda: "Necesito ayuda",
+      dolor: "Me duele algo",
+      calor: "Tengo calor"
+    },
+    tags: {
+      persona: "persona",
+      interlocutor: "interlocutor",
+      beber: "beber",
+      plato: "plato",
+      confirmar: "confirmar",
+      negar: "negar",
+      necesidad: "necesidad",
+      baño: "baño",
+      entretenimiento: "entretenimiento",
+      ver: "ver",
+      descanso: "descanso",
+      sueño: "sueño",
+      asistencia: "asistencia",
+      socorro: "socorro",
+      malestar: "malestar",
+      dolor: "dolor",
+      temperatura: "temperatura",
+      calor: "calor"
     },
     messages: {
       connecting: "Conectando...",
@@ -45,7 +71,7 @@ const translations = {
   },
   en: {
     title: "AAC · Tobii + AI (Vanilla JS) + Gaze Cursor",
-    subtitle: "Look at a pictogram for 4s (WebSocket) → choose 3 → we generate sentence → we read it.",
+    subtitle: "Look at a pictogram → choose 3 → we generate sentence → we read it.",
     subtitleExtra: "Now with visible <strong>gaze pointer</strong>.",
     connectButton: "Connect Tobii (ws://127.0.0.1:8765)",
     statusDisconnected: "Disconnected",
@@ -71,7 +97,33 @@ const translations = {
       agua: "Glass of water", 
       comida: "Plate of food",
       si: "Yes",
-      no: "No"
+      no: "No",
+      baño: "Go to bathroom",
+      tele: "Watch television",
+      dormir: "I want to sleep",
+      ayuda: "I need help",
+      dolor: "Something hurts",
+      calor: "I'm hot"
+    },
+    tags: {
+      persona: "person",
+      interlocutor: "other person",
+      beber: "drink",
+      plato: "plate",
+      confirmar: "confirm",
+      negar: "deny",
+      necesidad: "need",
+      baño: "bathroom",
+      entretenimiento: "entertainment",
+      ver: "watch",
+      descanso: "rest",
+      sueño: "sleep",
+      asistencia: "assistance",
+      socorro: "help",
+      malestar: "discomfort",
+      dolor: "pain",
+      temperatura: "temperature",
+      calor: "heat"
     },
     messages: {
       connecting: "Connecting...",
@@ -93,8 +145,9 @@ function detectLanguage() {
   const browserLang = navigator.language || navigator.userLanguage;
   const lang = browserLang.substring(0, 2).toLowerCase();
   
-  // Default to Spanish if language not supported
-  return translations[lang] ? lang : 'es';
+  // Always default to Spanish for AAC application as the primary language
+  // The user can manually switch to English if needed
+  return 'es';
 }
 
 // Get current language
@@ -207,6 +260,17 @@ function updatePictogramLabels() {
       const label = card.querySelector('.label');
       if (label) {
         label.textContent = t(`pictograms.${key}`);
+      }
+      
+      // Update tags as well
+      const tagsElement = card.querySelector('p');
+      if (tagsElement) {
+        // Get the original tags from PICTOS array
+        const picto = window.PICTOS && window.PICTOS.find(p => p.key === key);
+        if (picto && picto.tags) {
+          const translatedTags = picto.tags.map(tag => t(`tags.${tag}`)).join(', ');
+          tagsElement.textContent = translatedTags;
+        }
       }
     }
   });

@@ -9,48 +9,48 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware de seguridad
+// Security middleware
 app.use(helmet());
 
-// Rate limiting - limitar requests por IP
+// Rate limiting - limit requests per IP
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // máximo 100 requests por ventana por IP
-  message: 'Demasiadas solicitudes desde esta IP, intenta de nuevo en 15 minutos.'
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // maximum 100 requests per window per IP
+  message: 'Too many requests from this IP, please try again in 15 minutes.'
 });
 app.use(limiter);
 
-// CORS configurado para el frontend
+// CORS configured for frontend
 app.use(cors({
   origin: ['http://localhost:8080', 'http://127.0.0.1:8080', 'http://localhost:3000'],
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type']
 }));
 
-// Middleware para parsear JSON
+// Middleware to parse JSON
 app.use(express.json({ limit: '10mb' }));
 
-// Validar que las variables de entorno estén configuradas
+// Validate that environment variables are configured
 if (!process.env.AZURE_OPENAI_ENDPOINT || !process.env.DEPLOYMENT_NAME) {
-  console.error('❌ Error: AZURE_OPENAI_ENDPOINT y DEPLOYMENT_NAME deben estar configuradas en .env');
+  console.error('❌ Error: AZURE_OPENAI_ENDPOINT and DEPLOYMENT_NAME must be configured in .env');
   process.exit(1);
 }
 
-// Configurar Azure OpenAI
+// Configure Azure OpenAI
 let azureOpenAIClient = null;
 
 async function initializeAzureOpenAI() {
   try {
-    // Usar API Key si está disponible, sino usar Azure AD
+    // Use API Key if available, otherwise use Azure AD
     if (process.env.AZURE_OPENAI_API_KEY) {
       azureOpenAIClient = new AzureOpenAI({
         endpoint: process.env.AZURE_OPENAI_ENDPOINT,
         apiKey: process.env.AZURE_OPENAI_API_KEY,
         apiVersion: process.env.API_VERSION || '2025-01-01-preview',
       });
-      console.log('✅ Cliente Azure OpenAI inicializado correctamente con API Key');
+      console.log('✅ Azure OpenAI client initialized successfully with API Key');
     } else {
-      // Fallback a Azure AD si no hay API Key
+      // Fallback to Azure AD if no API Key
       const credential = new DefaultAzureCredential();
       const tokenProvider = getBearerTokenProvider(
         credential,
@@ -62,17 +62,17 @@ async function initializeAzureOpenAI() {
         azureADTokenProvider: tokenProvider,
         apiVersion: process.env.API_VERSION || '2025-01-01-preview',
       });
-      console.log('✅ Cliente Azure OpenAI inicializado correctamente con Azure AD');
+      console.log('✅ Azure OpenAI client initialized successfully with Azure AD');
     }
     
     return true;
   } catch (error) {
-    console.error('❌ Error inicializando Azure OpenAI:', error.message);
+    console.error('❌ Error initializing Azure OpenAI:', error.message);
     return false;
   }
 }
 
-// Variables para estadísticas
+// Variables for statistics
 let serverStats = {
   startTime: new Date(),
   requestCount: 0,
@@ -81,13 +81,13 @@ let serverStats = {
   localFallbackCount: 0
 };
 
-// Middleware para contar requests
+// Middleware to count requests
 app.use((req, res, next) => {
   serverStats.requestCount++;
   next();
 });
 
-// Endpoint de salud con estadísticas
+// Health endpoint with statistics
 app.get('/health', (req, res) => {
   const uptime = Date.now() - serverStats.startTime.getTime();
   res.json({ 
@@ -105,21 +105,21 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Endpoint principal para generar frases con Azure OpenAI
+// Main endpoint to generate phrases with Azure OpenAI
 app.post('/api/generate-phrase', async (req, res) => {
   try {
     const { concepts, context } = req.body;
 
-    // Validar entrada
+    // Validate input
     if (!concepts || !Array.isArray(concepts) || concepts.length === 0) {
       return res.status(400).json({
-        error: 'Se requiere un array de conceptos válido'
+        error: 'A valid concepts array is required'
       });
     }
 
-    // Verificar que Azure OpenAI esté disponible
+    // Check if Azure OpenAI is available
     if (!azureOpenAIClient) {
-      console.warn('⚠️ Azure OpenAI no está inicializado, usando fallback local');
+      console.warn('⚠️ Azure OpenAI not initialized, using local fallback');
       serverStats.localFallbackCount++;
       return res.json({
         phrase: generateLocalFallback(concepts),
@@ -128,22 +128,22 @@ app.post('/api/generate-phrase', async (req, res) => {
       });
     }
 
-    // Contexto predeterminado para AAC - optimizado para GPT-4.1-mini
-    const defaultContext = `Contexto: Una persona con discapacidad usa un dispositivo Tobii para comunicarse con la mirada. Necesita comunicar algo a su cuidador usando pictogramas seleccionados.`;
+    // Default context for AAC - optimized for GPT-4.1-mini
+    const defaultContext = `Context: A person with disability uses a Tobii device to communicate with gaze. They need to communicate something to their caregiver using selected pictograms.`;
     
     const userPrompt = `${context || defaultContext}
 
-Pictogramas seleccionados: ${concepts.join(', ')}
+Selected pictograms: ${concepts.join(', ')}
 
-Genera una frase corta, clara y respetuosa en español que exprese lo que la persona quiere comunicar. Responde solo con la frase:`;
+Generate a short, clear and respectful phrase in Spanish that expresses what the person wants to communicate. Respond only with the phrase:`;
 
-    console.log(`🔄 Procesando solicitud para conceptos: ${concepts.join(', ')}`);
+    console.log(`🔄 Processing request for concepts: ${concepts.join(', ')}`);
 
-    // Preparar mensajes para Azure OpenAI
+    // Prepare messages for Azure OpenAI
     const messages = [
       {
         role: 'system',
-        content: 'Eres un asistente especializado en comunicación aumentativa y alternativa (AAC). Generas frases claras en español basadas en pictogramas seleccionados por personas con discapacidad que usan dispositivos de comunicación asistida.'
+        content: 'You are an assistant specialized in augmentative and alternative communication (AAC). You generate clear phrases in Spanish based on pictograms selected by people with disabilities who use assistive communication devices.'
       },
       {
         role: 'user',
@@ -151,29 +151,29 @@ Genera una frase corta, clara y respetuosa en español que exprese lo que la per
       }
     ];
 
-    // Llamada a Azure OpenAI
-    console.log('📤 Enviando solicitud a Azure OpenAI...');
-    console.log('📋 Mensajes:', JSON.stringify(messages, null, 2));
+    // Call to Azure OpenAI
+    console.log('📤 Sending request to Azure OpenAI...');
+    console.log('📋 Messages:', JSON.stringify(messages, null, 2));
     
     const completion = await azureOpenAIClient.chat.completions.create({
       model: process.env.DEPLOYMENT_NAME,
       messages: messages,
-      max_completion_tokens: 150, // Reducido para GPT-4.1-mini
+      max_completion_tokens: 150, // Reduced for GPT-4.1-mini
       temperature: 0.7,
       stream: false
     });
 
-    console.log('📥 Respuesta completa de Azure OpenAI:', JSON.stringify(completion, null, 2));
+    console.log('📥 Complete response from Azure OpenAI:', JSON.stringify(completion, null, 2));
     
     const text = completion.choices?.[0]?.message?.content?.trim();
     
-    console.log('📝 Texto extraído:', JSON.stringify(text));
+    console.log('📝 Extracted text:', JSON.stringify(text));
     console.log('🔍 Choices length:', completion.choices?.length);
     console.log('🔍 First choice:', JSON.stringify(completion.choices?.[0], null, 2));
     
     if (!text) {
-      console.warn('⚠️ Respuesta vacía de Azure OpenAI, usando fallback local');
-      console.warn('💾 Objeto completion completo:', JSON.stringify(completion, null, 2));
+      console.warn('⚠️ Empty response from Azure OpenAI, using local fallback');
+      console.warn('💾 Complete completion object:', JSON.stringify(completion, null, 2));
       serverStats.localFallbackCount++;
       return res.json({
         phrase: generateLocalFallback(concepts),
@@ -183,7 +183,7 @@ Genera una frase corta, clara y respetuosa en español que exprese lo que la per
       });
     }
 
-    console.log(`✅ Frase generada exitosamente: "${text}"`);
+    console.log(`✅ Phrase generated successfully: "${text}"`);
     serverStats.azureSuccessCount++;
     
     res.json({
@@ -194,11 +194,11 @@ Genera una frase corta, clara y respetuosa en español que exprese lo que la per
     });
 
   } catch (error) {
-    console.error('❌ Error en el proxy:', error.message);
+    console.error('❌ Error in proxy:', error.message);
     serverStats.azureErrorCount++;
     serverStats.localFallbackCount++;
     
-    // Retornar fallback local en caso de error
+    // Return local fallback in case of error
     res.json({
       phrase: generateLocalFallback(req.body.concepts || []),
       source: 'local_fallback',
@@ -207,7 +207,7 @@ Genera una frase corta, clara y respetuosa en español que exprese lo que la per
   }
 });
 
-// Función de fallback local
+// Local fallback function
 function generateLocalFallback(concepts) {
   const set = new Set(concepts);
   
@@ -233,31 +233,31 @@ function generateLocalFallback(concepts) {
   return `Quiero comunicar: ${concepts.join(', ')}.`;
 }
 
-// Endpoint para probar la conexión con Azure OpenAI
+// Endpoint to test connection with Azure OpenAI
 app.get('/api/test-connection', async (req, res) => {
   try {
-    console.log('🔍 Probando conexión con Azure OpenAI...');
+    console.log('🔍 Testing connection with Azure OpenAI...');
     
     if (!azureOpenAIClient) {
-      console.log('❌ Cliente Azure OpenAI no inicializado');
+      console.log('❌ Azure OpenAI client not initialized');
       return res.status(200).json({
         status: 'error',
-        message: 'Azure OpenAI no inicializado',
+        message: 'Azure OpenAI not initialized',
         timestamp: new Date().toISOString()
       });
     }
 
-    // Hacer una llamada simple a Azure OpenAI para probar la conexión
+    // Make a simple call to Azure OpenAI to test the connection
     const completion = await azureOpenAIClient.chat.completions.create({
       model: process.env.DEPLOYMENT_NAME,
       messages: [
         {
           role: 'system',
-          content: 'Responde con "OK" para confirmar la conexión.'
+          content: 'Respond with "OK" to confirm the connection.'
         },
         {
           role: 'user',
-          content: 'Test de conexión'
+          content: 'Connection test'
         }
       ],
       max_completion_tokens: 50,
@@ -265,10 +265,10 @@ app.get('/api/test-connection', async (req, res) => {
     });
 
     if (completion && completion.choices && completion.choices.length > 0) {
-      console.log('✅ Azure OpenAI conectado exitosamente');
+      console.log('✅ Azure OpenAI connected successfully');
       res.json({ 
         status: 'connected', 
-        message: 'Azure OpenAI disponible',
+        message: 'Azure OpenAI available',
         endpoint: process.env.AZURE_OPENAI_ENDPOINT,
         deployment: process.env.DEPLOYMENT_NAME,
         api_version: process.env.API_VERSION,
@@ -276,24 +276,24 @@ app.get('/api/test-connection', async (req, res) => {
         test_response: completion.choices[0].message.content
       });
     } else {
-      console.log('❌ Respuesta inesperada de Azure OpenAI');
+      console.log('❌ Unexpected response from Azure OpenAI');
       res.status(200).json({
         status: 'error',
-        message: 'Respuesta inesperada de Azure OpenAI',
+        message: 'Unexpected response from Azure OpenAI',
         timestamp: new Date().toISOString()
       });
     }
 
   } catch (error) {
-    console.log(`❌ Error al conectar con Azure OpenAI: ${error.message}`);
+    console.log(`❌ Error connecting to Azure OpenAI: ${error.message}`);
     
-    let errorMessage = 'No se pudo conectar con Azure OpenAI';
+    let errorMessage = 'Could not connect to Azure OpenAI';
     if (error.message.includes('authentication')) {
-      errorMessage = 'Error de autenticación con Azure OpenAI';
+      errorMessage = 'Authentication error with Azure OpenAI';
     } else if (error.message.includes('timeout')) {
-      errorMessage = 'Timeout conectando con Azure OpenAI';
+      errorMessage = 'Timeout connecting to Azure OpenAI';
     } else if (error.message.includes('quota')) {
-      errorMessage = 'Cuota excedida en Azure OpenAI';
+      errorMessage = 'Quota exceeded in Azure OpenAI';
     }
     
     res.status(200).json({
@@ -305,19 +305,19 @@ app.get('/api/test-connection', async (req, res) => {
   }
 });
 
-// Manejo de errores global
+// Global error handling
 app.use((error, req, res, next) => {
-  console.error('❌ Error no manejado:', error);
+  console.error('❌ Unhandled error:', error);
   res.status(500).json({
-    error: 'Error interno del servidor',
-    message: 'Algo salió mal en el proxy'
+    error: 'Internal server error',
+    message: 'Something went wrong in the proxy'
   });
 });
 
-// Manejo de rutas no encontradas
+// Handle not found routes
 app.use('*', (req, res) => {
   res.status(404).json({
-    error: 'Ruta no encontrada',
+    error: 'Route not found',
     available_endpoints: [
       'GET /health',
       'GET /api/test-connection',
@@ -326,35 +326,35 @@ app.use('*', (req, res) => {
   });
 });
 
-// Iniciar servidor
+// Start server
 app.listen(PORT, async () => {
-  console.log(`🚀 Servidor proxy AAC ejecutándose en http://localhost:${PORT}`);
-  console.log(`📋 Endpoints disponibles:`);
-  console.log(`   • GET  /health - Estado del servidor`);
-  console.log(`   • GET  /api/test-connection - Probar conexión con Azure OpenAI`);
-  console.log(`   • POST /api/generate-phrase - Generar frases`);
-  console.log(`🔧 Configuración:`);
-  console.log(`   • Azure OpenAI Endpoint: ${process.env.AZURE_OPENAI_ENDPOINT || 'No configurado'}`);
-  console.log(`   • Deployment: ${process.env.DEPLOYMENT_NAME || 'No configurado'}`);
-  console.log(`   • API Version: ${process.env.API_VERSION || 'No configurado'}`);
+  console.log(`🚀 AAC proxy server running on http://localhost:${PORT}`);
+  console.log(`📋 Available endpoints:`);
+  console.log(`   • GET  /health - Server status`);
+  console.log(`   • GET  /api/test-connection - Test Azure OpenAI connection`);
+  console.log(`   • POST /api/generate-phrase - Generate phrases`);
+  console.log(`🔧 Configuration:`);
+  console.log(`   • Azure OpenAI Endpoint: ${process.env.AZURE_OPENAI_ENDPOINT || 'Not configured'}`);
+  console.log(`   • Deployment: ${process.env.DEPLOYMENT_NAME || 'Not configured'}`);
+  console.log(`   • API Version: ${process.env.API_VERSION || 'Not configured'}`);
   
-  // Inicializar Azure OpenAI
-  console.log(`🔄 Inicializando Azure OpenAI...`);
+  // Initialize Azure OpenAI
+  console.log(`🔄 Initializing Azure OpenAI...`);
   const initialized = await initializeAzureOpenAI();
   if (initialized) {
-    console.log(`✅ Azure OpenAI inicializado correctamente`);
+    console.log(`✅ Azure OpenAI initialized successfully`);
   } else {
-    console.log(`⚠️ Azure OpenAI no disponible - funcionará solo con fallback local`);
+    console.log(`⚠️ Azure OpenAI not available - will work with local fallback only`);
   }
 });
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('🔄 Cerrando servidor...');
+  console.log('🔄 Shutting down server...');
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
-  console.log('🔄 Cerrando servidor...');
+  console.log('🔄 Shutting down server...');
   process.exit(0);
 });

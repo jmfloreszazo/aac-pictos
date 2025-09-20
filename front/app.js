@@ -2,13 +2,22 @@
 
 // Pictogram data - labels will be updated by translation system
 const PICTOS = [
-  { key: 'yo',     label: 'Yo',              img: 'assets/yo.svg',     tags: ['persona'] },
-  { key: 'tu',     label: 'Tú',              img: 'assets/tu.svg',     tags: ['interlocutor'] },
-  { key: 'agua',   label: 'Vaso de agua',    img: 'assets/agua.svg',   tags: ['beber'] },
-  { key: 'comida', label: 'Plato de comida', img: 'assets/comida.svg', tags: ['plato'] },
-  { key: 'si',     label: 'Sí',              img: 'assets/si.svg',     tags: ['confirmar'] },
-  { key: 'no',     label: 'No',              img: 'assets/no.svg',     tags: ['negar'] },
+  { key: 'yo',     label: 'Yo',              emoji: '👤',   tags: ['persona'] },
+  { key: 'tu',     label: 'Tú',              emoji: '👥',   tags: ['interlocutor'] },
+  { key: 'agua',   label: 'Vaso de agua',    emoji: '💧',   tags: ['beber'] },
+  { key: 'comida', label: 'Plato de comida', emoji: '🍽️',   tags: ['plato'] },
+  { key: 'si',     label: 'Sí',              emoji: '✅',   tags: ['confirmar'] },
+  { key: 'no',     label: 'No',              emoji: '❌',   tags: ['negar'] },
+  { key: 'baño',   label: 'Ir al baño',      emoji: '🚽',   tags: ['necesidad', 'baño'] },
+  { key: 'tele',   label: 'Ver televisión',  emoji: '📺',   tags: ['entretenimiento', 'ver'] },
+  { key: 'dormir', label: 'Quiero dormir',   emoji: '😴',   tags: ['descanso', 'sueño'] },
+  { key: 'ayuda',  label: 'Necesito ayuda',  emoji: '🆘',   tags: ['asistencia', 'socorro'] },
+  { key: 'dolor',  label: 'Me duele algo',   emoji: '😰',   tags: ['malestar', 'dolor'] },
+  { key: 'calor',  label: 'Tengo calor',     emoji: '🥵',   tags: ['temperatura', 'calor'] },
 ];
+
+// Make PICTOS available globally for translations
+window.PICTOS = PICTOS;
 
 const DWELL_MS = 2500; // Reduced from 4000ms to 2.5s for easier use
 const WS_URL = 'ws://127.0.0.1:8765';
@@ -54,11 +63,14 @@ function renderBoard() {
     // Get translated label
     const translatedLabel = t(`pictograms.${item.key}`);
     
+    // Get translated tags
+    const translatedTags = item.tags.map(tag => t(`tags.${tag}`)).join(', ');
+    
     el.innerHTML = `
       <div class="dwell-ring" aria-hidden="true"><div class="dwell-fill"></div></div>
-      <img src="${item.img}" alt="${translatedLabel}">
+      <div class="emoji" aria-hidden="true">${item.emoji}</div>
       <h3 class="label">${translatedLabel}</h3>
-      <p>${item.tags.join(', ')}</p>
+      <p>${translatedTags}</p>
     `;
     setupDwellMouse(el, item.key);
     boardEl.appendChild(el);
@@ -150,7 +162,7 @@ document.getElementById('speak').addEventListener('click', () => {
 
 function speak(text) {
   if (!text || !text.trim()) {
-    console.warn('No hay texto para hablar');
+    console.warn('No text to speak');
     return;
   }
   
@@ -171,9 +183,9 @@ function speak(text) {
   
   if (spanishVoice) {
     utterance.voice = spanishVoice;
-    console.log('Usando voz en español:', spanishVoice.name);
+    console.log('Using Spanish voice:', spanishVoice.name);
   } else {
-    console.warn('No se encontró voz en español, usando voz por defecto');
+    console.warn('Spanish voice not found, using default voice');
   }
   
   // Configure speech parameters
@@ -183,17 +195,17 @@ function speak(text) {
   
   // Event handlers
   utterance.onstart = () => {
-    console.log('Comenzando a hablar:', text);
+    console.log('Starting to speak:', text);
     updateSpeechStatus('Hablando...');
   };
   
   utterance.onend = () => {
-    console.log('Terminó de hablar');
+    console.log('Finished speaking');
     updateSpeechStatus('');
   };
   
   utterance.onerror = (event) => {
-    console.error('Error en síntesis de voz:', event.error);
+    console.error('Speech synthesis error:', event.error);
     updateSpeechStatus(t('messages.speechError'));
     setTimeout(() => updateSpeechStatus(''), 3000);
   };
@@ -211,11 +223,11 @@ function updateSpeechStatus(message) {
   }
 }
 
-// Generar frases usando el proxy local (seguro)
+// Generate phrases using local proxy (secure)
 async function composeRemote(concepts) {
-  // Si Azure no está disponible, usar directamente el fallback local
+  // If Azure is not available, use local fallback directly
   if (!azureFoundryAvailable) {
-    console.log('Azure Foundry no disponible, usando generación local');
+    console.log('Azure Foundry not available, using local generation');
     updateAIStatus('Usando generación local');
     return composeLocal(concepts);
   }
@@ -242,7 +254,7 @@ async function composeRemote(concepts) {
     
     if (!res.ok) {
       const errorData = await res.json();
-      throw new Error(`HTTP ${res.status}: ${errorData.error || 'Error del proxy'}`);
+      throw new Error(`HTTP ${res.status}: ${errorData.error || 'Proxy error'}`);
     }
     
     const data = await res.json();
@@ -303,7 +315,7 @@ function updateAzureStatus(isAvailable, message = '', showRetry = true) {
 // Function to retry Azure connection with exponential backoff
 async function retryAzureConnection(attempt = 0) {
   if (attempt >= MAX_RETRY_ATTEMPTS) {
-    console.log('❌ Máximo número de reintentos alcanzado para Azure Foundry');
+    console.log('❌ Maximum retry attempts reached for Azure Foundry');
     updateAzureStatus(false, 'Máx. reintentos alcanzado', true);
     return false;
   }
@@ -343,16 +355,16 @@ async function checkAzureFoundryStatus(showLoading = true) {
       const data = await testResponse.json();
       if (data.status === 'connected') {
         updateAzureStatus(true);
-        console.log('✅ Azure Foundry disponible');
+        console.log('✅ Azure Foundry available');
         return true;
       } else {
         updateAzureStatus(false, data.message || 'No disponible');
-        console.log('❌ Azure Foundry no disponible:', data.message);
+        console.log('❌ Azure Foundry not available:', data.message);
         
         // Auto-retry if it's a temporary error
         if (azureRetryCount < MAX_RETRY_ATTEMPTS && 
             (data.message.includes('timeout') || data.message.includes('Timeout'))) {
-          console.log('🔄 Iniciando reintentos automáticos...');
+          console.log('🔄 Starting automatic retries...');
           retryAzureConnection(0);
         }
         
@@ -360,12 +372,12 @@ async function checkAzureFoundryStatus(showLoading = true) {
       }
     } else {
       updateAzureStatus(false, `Error ${testResponse.status}`);
-      console.log('❌ Error al verificar Azure Foundry:', testResponse.status);
+      console.log('❌ Error verifying Azure Foundry:', testResponse.status);
       return false;
     }
   } catch (error) {
     updateAzureStatus(false, 'Proxy no accesible');
-    console.log('❌ No se pudo verificar Azure Foundry:', error.message);
+    console.log('❌ Could not verify Azure Foundry:', error.message);
     return false;
   }
 }
@@ -406,6 +418,13 @@ function composeLocal(concepts) {
   if (set.has('yo') && set.has('agua')) return 'Por favor, necesito un vaso de agua.';
   if (set.has('yo') && set.has('comida')) return 'Por favor, necesito un plato de comida.';
   if (set.has('tu') && set.has('agua')) return '¿Puedes traerme un vaso de agua, por favor?';
+  if (set.has('yo') && set.has('baño')) return 'Necesito ir al baño, por favor.';
+  if (set.has('yo') && set.has('tele')) return 'Quiero ver la televisión.';
+  if (set.has('yo') && set.has('dormir')) return 'Tengo sueño, quiero dormir.';
+  if (set.has('yo') && set.has('ayuda')) return 'Por favor, necesito ayuda.';
+  if (set.has('yo') && set.has('dolor')) return 'Me duele algo, no me siento bien.';
+  if (set.has('yo') && set.has('calor')) return 'Tengo mucho calor.';
+  if (set.has('tu') && set.has('ayuda')) return '¿Puedes ayudarme, por favor?';
   return `Quiero comunicar: ${concepts.join(', ')}.`;
 }
 
@@ -560,7 +579,7 @@ window.addEventListener('load', () => {
     const spanishVoices = voices.filter(v => 
       v.lang && v.lang.toLowerCase().includes('es')
     );
-    console.log('Voces en español disponibles:', spanishVoices.map(v => `${v.name} (${v.lang})`));
+    console.log('Available Spanish voices:', spanishVoices.map(v => `${v.name} (${v.lang})`));
   });
   
   // Application initialization moved to initializeApp() function
@@ -568,7 +587,7 @@ window.addEventListener('load', () => {
 
 // Event listener for retry Azure button
 retryAzureBtn.addEventListener('click', () => {
-  console.log('🔄 Reintentando conexión con Azure Foundry...');
+  console.log('🔄 Retrying Azure Foundry connection...');
   checkAzureFoundryStatus(true);
 });
 

@@ -83,14 +83,82 @@ az login
 
 ### Configure environment variables
 
-The `.env` file should contain:
+Create a `.env` file in the `backend-proxy/` directory with your Azure OpenAI configuration:
+
+```bash
+# Create the .env file
+cd backend-proxy
+touch .env
+```
+
+**Example `.env` file:**
 
 ```env
-AZURE_OPENAI_ENDPOINT=https://jmfz-aif-test.openai.azure.com/
-DEPLOYMENT_NAME=o1
-API_VERSION=2025-01-01-preview
+# ==============================================
+# AZURE OPENAI CONFIGURATION (REQUIRED)
+# ==============================================
+
+# Your Azure OpenAI resource endpoint
+# Format: https://YOUR-RESOURCE-NAME.openai.azure.com/
+AZURE_OPENAI_ENDPOINT=https://your-resource-name.openai.azure.com/
+
+# The deployment name of your model in Azure OpenAI Studio
+# Common models: gpt-4, gpt-4-turbo, gpt-35-turbo, o1-preview
+DEPLOYMENT_NAME=gpt-4
+
+# Azure OpenAI API version
+# Check latest versions at: https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation
+API_VERSION=2024-08-01-preview
+
+# ==============================================
+# AUTHENTICATION OPTIONS (Choose one)
+# ==============================================
+
+# Option 1: Use API Key (simpler setup)
+# Get from Azure Portal → Your OpenAI Resource → Keys and Endpoint
+AZURE_OPENAI_API_KEY=your-api-key-here
+
+# Option 2: Use Azure AD authentication (more secure)
+# Leave AZURE_OPENAI_API_KEY empty to use Azure AD
+# Requires: az login and proper RBAC permissions
+
+# ==============================================
+# SERVER CONFIGURATION (OPTIONAL)
+# ==============================================
+
+# Port for the backend proxy server
+# Default: 3001, but we use 3002 to avoid conflicts
 PORT=3002
+
+# ==============================================
+# EXAMPLE COMPLETE CONFIGURATION
+# ==============================================
+# AZURE_OPENAI_ENDPOINT=https://jmfz-aif-test.openai.azure.com/
+# DEPLOYMENT_NAME=gpt-4
+# API_VERSION=2024-08-01-preview
+# AZURE_OPENAI_API_KEY=sk-1234567890abcdef...
+# PORT=3002
 ```
+
+**How to get these values:**
+
+1. **AZURE_OPENAI_ENDPOINT**:
+   - Go to Azure Portal → Your OpenAI Resource → "Keys and Endpoint"
+   - Copy the "Endpoint" URL
+
+2. **DEPLOYMENT_NAME**:
+   - Go to Azure OpenAI Studio → Deployments
+   - Copy the name of your model deployment (not the model name)
+
+3. **AZURE_OPENAI_API_KEY** (if using API key authentication):
+   - Go to Azure Portal → Your OpenAI Resource → "Keys and Endpoint"
+   - Copy "Key 1" or "Key 2"
+
+4. **API_VERSION**:
+   - Use the latest stable version from [Microsoft docs](https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation)
+   - For newest features, use preview versions like `2024-08-01-preview`
+
+**Security Note**: Never commit the `.env` file to version control. It's already included in `.gitignore`.
 
 ### Execute the proxy server
 
@@ -235,21 +303,21 @@ kill -9 <PID>
 
 ```text
 aac-pictos/
-├── README.md                    # This file
-├── tobii/                       # Tobii C#/.NET Bridge
+├── README.md                   # This file
+├── tobii/                      # Tobii C#/.NET Bridge
 │   ├── Tobii.sln               # Visual Studio solution
 │   └── TobiiAccessibility/     # Main project
 │       ├── Program.cs          # WebSocket server for eye tracking
 │       └── TobiiAccessibility.csproj
 ├── backend-proxy/              # Node.js proxy server
-│   ├── package.json           # npm dependencies
-│   ├── server.js             # Express server + Azure OpenAI
-│   └── .env                  # Environment variables
-└── front/                     # HTML/JS Frontend
-    ├── index.html            # Main interface
-    ├── app.js               # Application logic
-    ├── styles.css           # CSS styles
-    └── assets/              # SVG pictograms
+│   ├── package.json            # npm dependencies
+│   ├── server.js               # Express server + Azure OpenAI
+│   └── .env                    # Environment variables
+└── front/                      # HTML/JS Frontend
+    ├── index.html              # Main interface
+    ├── app.js                  # Application logic
+    ├── styles.css              # CSS styles
+    └── assets/                 # SVG pictograms
         ├── yo.svg
         ├── tu.svg
         ├── agua.svg
