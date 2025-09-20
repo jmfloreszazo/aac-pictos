@@ -46,22 +46,33 @@ dotnet build Tobii.sln
 ### Execute the bridge
 
 ```bash
-# From the tobii/ folder
-cd TobiiAccessibility/bin/Debug/net48/
+# Navigate to the compiled executable directory
+cd tobii/TobiiAccessibility/bin/Debug/net48/
 
-# Execute the program (default port 8765)
-./TobiiAccessibility.exe
+# Execute using Windows command through WSL/cmd (recommended)
+cmd.exe /c "TobiiAccesibilidad.exe"
 
 # Or with custom parameters:
-./TobiiAccessibility.exe --host 127.0.0.1 --port 8765
+cmd.exe /c "TobiiAccesibilidad.exe --host 127.0.0.1 --port 8765"
+
+# Alternative: Use full Windows path
+cmd.exe /c "C:\sources\dotNet\Test_Tobii\aac-pictos\tobii\TobiiAccessibility\bin\Debug\net48\TobiiAccesibilidad.exe"
 ```
 
 **Expected result:**
 
 ```text
-Tobii -> WebSocket bridge
-WebSocket server listening on ws://127.0.0.1:8765
-Gaze tracking initialized...
+[bridge] Starting WebSocket server at ws://127.0.0.1:8765
+20/09/2025 17:03:14 [Info] Server started at ws://127.0.0.1:8765 (actual port 8765) 
+[bridge] Checking Tobii environment...
+[bridge] Found 6 Tobii processes running:
+[bridge]   - Tobii.EyeX.Engine
+[bridge]   - TobiiGameHub
+[bridge]   - Tobii.EyeX.Interaction
+[bridge]   - Tobii.Service
+[bridge] Attempting to initialize Tobii host...
+[bridge] Creating gaze point data stream...
+[bridge] Ready to stream gaze data. Press Ctrl+C to exit.
 ```
 
 ---
@@ -163,20 +174,34 @@ PORT=3002
 ### Execute the proxy server
 
 ```bash
-# Development mode
+# Navigate to backend-proxy directory
+cd backend-proxy
+
+# Method 1: Execute directly from correct directory (recommended)
+bash -c "cd /mnt/c/sources/dotNet/Test_Tobii/aac-pictos/backend-proxy && node server.js"
+
+# Method 2: Use npm scripts (if configured)
 npm start
 
-# Or direct mode
-node server.js
+# Method 3: Direct execution with full path
+node /mnt/c/sources/dotNet/Test_Tobii/aac-pictos/backend-proxy/server.js
 ```
 
 **Expected result:**
 
 ```text
-Server AAC AI Proxy started on port 3002
-Azure authentication configured correctly
-Azure OpenAI connection: OK
-Server ready at http://localhost:3002
+🚀 AAC proxy server running on http://localhost:3002
+📋 Available endpoints:
+   • GET  /health - Server status
+   • GET  /api/test-connection - Test Azure OpenAI connection
+   • POST /api/generate-phrase - Generate phrases
+🔧 Configuration:
+   • Azure OpenAI Endpoint: https://jmfz-aif-test.cognitiveservices.azure.com/
+   • Deployment: gpt-4.1-mini
+   • API Version: 2025-01-01-preview
+🔄 Initializing Azure OpenAI...
+✅ Azure OpenAI client initialized successfully with API Key
+✅ Azure OpenAI initialized successfully
 ```
 
 ### Verify the backend
@@ -196,21 +221,31 @@ curl http://localhost:3002/api/test-connection
 ### Open the application
 
 ```bash
-# From the front/ folder
-# Option 1: Open directly in browser
-open index.html
+# Navigate to frontend directory
+cd front
 
-# Option 2: Use local HTTP server (recommended)
-# With Python 3:
-python -m http.server 8080
+# Method 1: Using Python 3 HTTP server (recommended)
+python3 -m http.server 8080
 
-# With Node.js (if you have http-server installed):
+# Method 2: Direct execution with full path
+cd /mnt/c/sources/dotNet/Test_Tobii/aac-pictos/front && python3 -m http.server 8080
+
+# Method 3: Using Node.js (if you have http-server installed)
 npx http-server -p 8080
+
+# Method 4: Open directly in browser (less recommended)
+# open index.html
+```
+
+**Expected frontend output:**
+
+```text
+Serving HTTP on 0.0.0.0 port 8080 (http://0.0.0.0:8080/) ...
 ```
 
 ### Application access
 
-Open in browser: `http://localhost:8080` (or directly the HTML file)
+Open in browser: `http://localhost:8080`
 
 **Expected interface:**
 
@@ -219,6 +254,35 @@ Open in browser: `http://localhost:8080` (or directly the HTML file)
 - Board with 6 pictograms
 - Text area for generated sentences
 - Gaze cursor controls
+
+---
+
+## Quick Start Commands (Tested Working)
+
+For quick execution, use these tested commands in separate terminals:
+
+### Terminal 1: Tobii Bridge
+
+```bash
+cd /mnt/c/sources/dotNet/Test_Tobii/aac-pictos/tobii/TobiiAccessibility/bin/Debug/net48
+cmd.exe /c "TobiiAccesibilidad.exe"
+```
+
+### Terminal 2: Backend Proxy
+
+```bash
+bash -c "cd /mnt/c/sources/dotNet/Test_Tobii/aac-pictos/backend-proxy && node server.js"
+```
+
+### Terminal 3: Frontend
+
+```bash
+cd /mnt/c/sources/dotNet/Test_Tobii/aac-pictos/front && python3 -m http.server 8080
+```
+
+### Access Application
+
+Open browser: `http://localhost:8080`
 
 ---
 

@@ -1,7 +1,7 @@
 {
   "name": "aac-ai-proxy",
   "version": "1.0.0",
-  "description": "Proxy server para conectar la aplicación AAC con Azure Foundry de forma segura",
+  "description": "Proxy server + AAC + Azure",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
