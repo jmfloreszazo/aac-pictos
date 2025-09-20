@@ -221,10 +221,16 @@ function updateInterface() {
   
   // Update action buttons
   const clearBtn = document.getElementById('clear');
-  if (clearBtn) clearBtn.textContent = t('clearButton');
+  if (clearBtn) {
+    const span = clearBtn.querySelector('span');
+    if (span) span.textContent = t('clearButton');
+  }
   
   const speakBtn = document.getElementById('speak');
-  if (speakBtn) speakBtn.textContent = t('speakButton');
+  if (speakBtn) {
+    const span = speakBtn.querySelector('span');
+    if (span) span.textContent = t('speakButton');
+  }
   
   // Update hint
   const hint = document.querySelector('.hint');

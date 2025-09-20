@@ -108,7 +108,7 @@ app.get('/health', (req, res) => {
 // Main endpoint to generate phrases with Azure OpenAI
 app.post('/api/generate-phrase', async (req, res) => {
   try {
-    const { concepts, context } = req.body;
+    const { concepts, context, language, translatedConcepts } = req.body;
 
     // Validate input
     if (!concepts || !Array.isArray(concepts) || concepts.length === 0) {
@@ -117,33 +117,52 @@ app.post('/api/generate-phrase', async (req, res) => {
       });
     }
 
+    // Determine target language
+    const targetLanguage = language === 'en' ? 'English' : 'Spanish';
+    const languageCode = language === 'en' ? 'en' : 'es';
+    
+    // Use translated concepts if available, otherwise use original concepts
+    const conceptsToUse = translatedConcepts && translatedConcepts.length > 0 ? translatedConcepts : concepts;
+
     // Check if Azure OpenAI is available
     if (!azureOpenAIClient) {
       console.warn('Azure OpenAI not initialized, using local fallback');
       serverStats.localFallbackCount++;
       return res.json({
-        phrase: generateLocalFallback(concepts),
+        phrase: generateLocalFallback(concepts, languageCode),
         source: 'local_fallback',
         reason: 'azure_not_initialized'
       });
     }
 
-    // Default context for AAC - optimized for GPT-4.1-mini
-    const defaultContext = `Context: A person with disability uses a Tobii device to communicate with gaze. They need to communicate something to their caregiver using selected pictograms.`;
+    // Context for AAC - adapted to the target language
+    const defaultContext = language === 'en' 
+      ? `Context: A person with disability uses a Tobii device to communicate with gaze. They need to communicate something to their caregiver using selected pictograms.`
+      : `Contexto: Una persona con discapacidad usa un dispositivo Tobii para comunicarse con la mirada. Necesita comunicar algo a su cuidador usando pictogramas seleccionados.`;
     
-    const userPrompt = `${context || defaultContext}
+    const userPrompt = language === 'en'
+      ? `${context || defaultContext}
 
-Selected pictograms: ${concepts.join(', ')}
+Selected pictograms: ${conceptsToUse.join(', ')}
 
-Generate a short, clear and respectful phrase in Spanish that expresses what the person wants to communicate. Respond only with the phrase:`;
+Generate a short, clear and respectful phrase in English that expresses what the person wants to communicate. Respond only with the phrase:`
+      : `${context || defaultContext}
 
-    console.log(`Processing request for concepts: ${concepts.join(', ')}`);
+Pictogramas seleccionados: ${conceptsToUse.join(', ')}
+
+Genera una frase corta, clara y respetuosa en español que exprese lo que la persona quiere comunicar. Responde solo con la frase:`;
+
+    console.log(`Processing request for concepts: ${conceptsToUse.join(', ')} (Language: ${targetLanguage})`);
 
     // Prepare messages for Azure OpenAI
+    const systemMessage = language === 'en'
+      ? 'You are an assistant specialized in augmentative and alternative communication (AAC). You generate clear phrases in English based on pictograms selected by people with disabilities who use assistive communication devices.'
+      : 'Eres un asistente especializado en comunicación aumentativa y alternativa (CAA). Generas frases claras en español basadas en pictogramas seleccionados por personas con discapacidad que usan dispositivos de comunicación asistiva.';
+
     const messages = [
       {
         role: 'system',
-        content: 'You are an assistant specialized in augmentative and alternative communication (AAC). You generate clear phrases in Spanish based on pictograms selected by people with disabilities who use assistive communication devices.'
+        content: systemMessage
       },
       {
         role: 'user',
@@ -176,7 +195,7 @@ Generate a short, clear and respectful phrase in Spanish that expresses what the
       console.warn('Complete completion object:', JSON.stringify(completion, null, 2));
       serverStats.localFallbackCount++;
       return res.json({
-        phrase: generateLocalFallback(concepts),
+        phrase: generateLocalFallback(concepts, languageCode),
         source: 'local_fallback',
         reason: 'empty_response',
         debug_completion: completion
@@ -200,7 +219,7 @@ Generate a short, clear and respectful phrase in Spanish that expresses what the
     
     // Return local fallback in case of error
     res.json({
-      phrase: generateLocalFallback(req.body.concepts || []),
+      phrase: generateLocalFallback(req.body.concepts || [], req.body.language || 'es'),
       source: 'local_fallback',
       error: error.message
     });
@@ -208,8 +227,10 @@ Generate a short, clear and respectful phrase in Spanish that expresses what the
 });
 
 // Local fallback function
-function generateLocalFallback(concepts) {
-  return 'AI service temporarily unavailable.';
+function generateLocalFallback(concepts, language = 'es') {
+  return language === 'en' 
+    ? 'AI service temporarily unavailable.'
+    : 'Servicio de IA temporalmente no disponible.';
 }
 
 // Endpoint to test connection with Azure OpenAI

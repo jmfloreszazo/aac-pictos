@@ -80,7 +80,7 @@ function renderBoard() {
 // Dwell state
 let dwellTarget = null, dwellTimer = null, dwellStart = 0;
 
-function beginDwell(element, key) {
+function beginDwell(element, keyOrAction) {
   if (dwellTarget === element) return;
   endDwell();
   dwellTarget = element;
@@ -92,7 +92,12 @@ function beginDwell(element, key) {
     const fill = dwellTarget.querySelector('.dwell-fill');
     if (fill) fill.style.width = pct + '%';
     if (pct >= 100) {
-      chooseKey(key);
+      // Check if it's a pictogram key or an action
+      if (keyOrAction === 'clear' || keyOrAction === 'speak') {
+        executeAction(keyOrAction);
+      } else {
+        chooseKey(keyOrAction);
+      }
       endDwell();
     }
   }, 60);
@@ -122,6 +127,26 @@ function setupDwellMouse(el, key) {
   el.addEventListener('focus', () => beginDwell(el, key));
   el.addEventListener('blur', endDwell);
   el.addEventListener('click', () => chooseKey(key));
+}
+
+// Setup dwell for action buttons
+function setupDwellAction(el, action) {
+  el.addEventListener('mouseenter', () => beginDwell(el, action));
+  el.addEventListener('mouseleave', endDwell);
+  el.addEventListener('focus', () => beginDwell(el, action));
+  el.addEventListener('blur', endDwell);
+  el.addEventListener('click', () => executeAction(action));
+}
+
+// Execute actions for buttons
+function executeAction(action) {
+  if (action === 'clear') {
+    selected = [];
+    renderChips();
+    outputEl.value = '';
+  } else if (action === 'speak') {
+    speak(outputEl.value.trim());
+  }
 }
 
 // Selection
@@ -160,6 +185,10 @@ document.getElementById('speak').addEventListener('click', () => {
   speak(outputEl.value.trim());
 });
 
+// Setup dwell for action buttons
+setupDwellAction(document.getElementById('clear'), 'clear');
+setupDwellAction(document.getElementById('speak'), 'speak');
+
 function speak(text) {
   if (!text || !text.trim()) {
     console.warn('No text to speak');
@@ -171,21 +200,37 @@ function speak(text) {
   
   const utterance = new SpeechSynthesisUtterance(text.trim());
   
-  // Configure voice preferences for Spanish
+  // Configure voice preferences based on current language
   const voices = speechSynthesis.getVoices();
-  const spanishVoice = voices.find(v => 
-    v.lang && (
-      v.lang.toLowerCase().startsWith('es-es') ||
-      v.lang.toLowerCase().startsWith('es-mx') ||
-      v.lang.toLowerCase().startsWith('es')
-    )
-  );
+  let selectedVoice = null;
   
-  if (spanishVoice) {
-    utterance.voice = spanishVoice;
-    console.log('Using Spanish voice:', spanishVoice.name);
+  if (currentLanguage === 'en') {
+    // Find English voice
+    selectedVoice = voices.find(v => 
+      v.lang && (
+        v.lang.toLowerCase().startsWith('en-us') ||
+        v.lang.toLowerCase().startsWith('en-gb') ||
+        v.lang.toLowerCase().startsWith('en')
+      )
+    );
+    console.log('Looking for English voice...');
   } else {
-    console.warn('Spanish voice not found, using default voice');
+    // Find Spanish voice (default)
+    selectedVoice = voices.find(v => 
+      v.lang && (
+        v.lang.toLowerCase().startsWith('es-es') ||
+        v.lang.toLowerCase().startsWith('es-mx') ||
+        v.lang.toLowerCase().startsWith('es')
+      )
+    );
+    console.log('Looking for Spanish voice...');
+  }
+  
+  if (selectedVoice) {
+    utterance.voice = selectedVoice;
+    console.log(`Using ${currentLanguage === 'en' ? 'English' : 'Spanish'} voice:`, selectedVoice.name);
+  } else {
+    console.warn(`${currentLanguage === 'en' ? 'English' : 'Spanish'} voice not found, using default voice`);
   }
   
   // Configure speech parameters
@@ -196,7 +241,7 @@ function speak(text) {
   // Event handlers
   utterance.onstart = () => {
     console.log('Starting to speak:', text);
-    updateSpeechStatus('Hablando...');
+    updateSpeechStatus(t('messages.speechStart'));
   };
   
   utterance.onend = () => {
@@ -245,7 +290,9 @@ async function composeRemote(concepts) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ 
-        concepts: concepts
+        concepts: concepts,
+        language: currentLanguage,
+        translatedConcepts: concepts.map(key => t(`pictograms.${key}`))
       }),
       signal: controller.signal
     });
@@ -430,7 +477,7 @@ function composeLocal(concepts) {
 
 async function composeAndSpeak(concepts) {
   try {
-    outputEl.value = 'Generando frase con IA...';
+    outputEl.value = t('messages.aiProcessing');
     outputEl.style.fontStyle = 'italic';
     outputEl.style.opacity = '0.7';
     
@@ -447,10 +494,10 @@ async function composeAndSpeak(concepts) {
     
   } catch (error) {
     console.error('Error en composición y habla:', error);
-    outputEl.value = 'Error al generar frase';
+    outputEl.value = t('messages.aiError');
     outputEl.style.fontStyle = 'normal';
     outputEl.style.opacity = '1';
-    updateAIStatus('Error: No se pudo generar la frase');
+    updateAIStatus(t('messages.aiError'));
   }
 }
 
@@ -512,24 +559,36 @@ function connectWS() {
       
       // Buscar elementos en un área más amplia para facilitar la selección
       const tolerance = 30; // píxeles de tolerancia
-      let targetCard = null;
+      let targetElement = null;
+      let targetAction = null;
       
       // Probar punto exacto primero
       let el = document.elementFromPoint(px, py);
       let card = el && el.closest ? el.closest('.card') : null;
+      let actionBtn = el && el.closest ? el.closest('.action-btn') : null;
+      
       if (card && card.parentElement === boardEl) {
-        targetCard = card;
+        targetElement = card;
+      } else if (actionBtn) {
+        targetElement = actionBtn;
+        targetAction = actionBtn.id; // 'clear' or 'speak'
       } else {
         // Si no hay éxito, probar puntos alrededor con tolerancia
-        for (let dx = -tolerance; dx <= tolerance && !targetCard; dx += tolerance) {
-          for (let dy = -tolerance; dy <= tolerance && !targetCard; dy += tolerance) {
+        for (let dx = -tolerance; dx <= tolerance && !targetElement; dx += tolerance) {
+          for (let dy = -tolerance; dy <= tolerance && !targetElement; dy += tolerance) {
             const testX = px + dx;
             const testY = py + dy;
             if (testX >= 0 && testX < window.innerWidth && testY >= 0 && testY < window.innerHeight) {
               el = document.elementFromPoint(testX, testY);
               card = el && el.closest ? el.closest('.card') : null;
+              actionBtn = el && el.closest ? el.closest('.action-btn') : null;
+              
               if (card && card.parentElement === boardEl) {
-                targetCard = card;
+                targetElement = card;
+                break;
+              } else if (actionBtn) {
+                targetElement = actionBtn;
+                targetAction = actionBtn.id;
                 break;
               }
             }
@@ -537,8 +596,12 @@ function connectWS() {
         }
       }
       
-      if (targetCard) {
-        beginDwell(targetCard, targetCard.dataset.key);
+      if (targetElement) {
+        if (targetAction) {
+          beginDwell(targetElement, targetAction);
+        } else {
+          beginDwell(targetElement, targetElement.dataset.key);
+        }
       } else {
         endDwell();
       }
