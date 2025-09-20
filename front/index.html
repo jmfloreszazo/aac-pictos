@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AAC · Tobii + IA (Vanilla JS) + Gaze Cursor</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>AAC · Tobii + IA (Vanilla JS)</h1>
+    <p class="subtitle">Mira un pictograma 4s (WebSocket) → elige 3 → generamos frase → la leemos. <br>Ahora con <strong>puntero de mirada</strong> visible.</p>
+    <div class="language-switcher">
+      <button id="lang-es" class="lang-btn" data-lang="es">Español</button>
+      <button id="lang-en" class="lang-btn" data-lang="en">English</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="conn">
+      <button id="connect">Conectar Tobii (ws://127.0.0.1:8765)</button>
+      <span id="status" class="badge">Desconectado</span>
+      <div class="azure-status">
+        <span class="azure-label">Azure OpenAI:</span>
+        <span id="azure-status" class="badge">Verificando...</span>
+        <button id="retry-azure" class="retry-btn" style="display: none;">Reintentar</button>
+      </div>
+      <label class="cursorctl">Tamaño cursor:
+        <input id="cursorSize" type="range" min="12" max="80" value="35">
+      </label>
+      <label class="cursorctl">Opacidad:
+        <input id="cursorAlpha" type="range" min="10" max="90" value="25">
+      </label>
+      <label class="cursorctl">Suavidad:
+        <input id="smoothness" type="range" min="5" max="50" value="15">
+      </label>
+      <label class="cursorctl">Tiempo dwell:
+        <input id="dwellTime" type="range" min="1500" max="5000" value="2500"> <span id="dwellDisplay">2.5s</span>
+      </label>
+    </section>
+
+    <section id="board" class="board" aria-label="Tablero de pictogramas"></section>
+
+    <section class="status">
+      <div id="chips" class="chips" aria-live="polite" aria-atomic="true"></div>
+      <textarea id="output" rows="3" placeholder="Aquí aparecerá la frase…"></textarea>
+      <div class="actions">
+        <button id="clear">Limpiar</button>
+        <button id="speak">Leer en voz alta</button>
+      </div>
+      <div class="status-indicators">
+        <div id="ai-status" class="status-message" style="display: none;"></div>
+        <div id="speech-status" class="status-message" style="display: none;"></div>
+      </div>
+      <p class="hint">Sin Tobii, simula la mirada dejando el puntero 2.5s sobre un pictograma. El cursor verde seguirá tu mirada para facilitar el uso.</p>
+    </section>
+  </main>
+
+  <div id="gazeCursor" aria-hidden="true"></div>
+
+  <footer>
+    <small>Aplicación AAC con IA integrada. Las credenciales están seguras en el servidor backend.</small>
+  </footer>
+
+  <script src="translations.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+:root {
+  --bg: #0f1220;
+  --card: #171a2b;
+  --text: #f2f5ff;
+  --muted: #9aa3b2;
+  --accent: #4ea1ff;
+  --accent-2: #5cf2c7;
+  --ok: #33d39a;
+  --err: #ff5c7a;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, sans-serif; }
+header { padding: 24px 16px 8px; text-align: center; }
+h1 { margin: 0; font-size: 22px; }
+.subtitle { margin-top: 6px; color: var(--muted); }
+main { max-width: 980px; margin: 0 auto; padding: 12px 16px 24px; }
+.conn { display: flex; gap: 10px; align-items: center; justify-content: center; margin-bottom: 12px; flex-wrap: wrap;}
+.azure-status { display: flex; gap: 6px; align-items: center; }
+.azure-label { font-size: 12px; color: var(--muted); }
+.retry-btn { 
+  font-size: 10px; 
+  padding: 2px 6px; 
+  background: var(--card); 
+  color: var(--accent); 
+  border: 1px solid var(--accent); 
+  border-radius: 4px; 
+  cursor: pointer;
+}
+.retry-btn:hover { background: var(--accent); color: var(--card); }
+.badge { font-size: 12px; padding: 4px 8px; border-radius: 10px; background: #0c0f1a; border: 1px solid #1f2440; color: var(--muted); }
+.badge.ok { color: var(--ok); border-color: var(--ok); }
+.badge.err { color: var(--err); border-color: var(--err); }
+.badge.warning { color: #ffa726; border-color: #ffa726; }
+.cursorctl { font-size: 12px; color: var(--muted); display:flex; align-items:center; gap:6px; white-space: nowrap; }
+.cursorctl input[type="range"] { width: 80px; }
+
+.board { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+.card { background: var(--card); border: 1px solid #1e223b; border-radius: 16px; padding: 14px; position: relative; cursor: pointer; outline: none; }
+.card:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+.card img { width: 72px; height: 72px; display: block; margin: 4px auto 8px; }
+.card h3 { margin: 6px 0 2px; font-size: 18px; text-align: center; }
+.card p { margin: 0; color: var(--muted); font-size: 12px; text-align: center; }
+.dwell-ring { position: absolute; inset: 0; border-radius: 16px; border: 2px dashed #31395f; pointer-events: none; }
+.dwell-fill { position: absolute; left: 0; top: 0; height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); opacity: .18; border-radius: 14px; transition: width 60ms linear; }
+
+.status { margin-top: 18px; background: var(--card); border: 1px solid #1e223b; border-radius: 16px; padding: 12px; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.chip { background: #0c0f1a; border: 1px solid #22284a; padding: 6px 10px; border-radius: 999px; font-size: 13px; }
+textarea { width: 100%; background: #0c0f1a; color: var(--text); border: 1px solid #1f2440; border-radius: 10px; padding: 10px; margin-top: 8px; }
+.actions { display: flex; gap: 8px; margin-top: 8px; }
+button { background: #0c0f1a; color: var(--text); border: 1px solid #1f2440; border-radius: 10px; padding: 8px 10px; }
+.status-indicators { margin: 8px 0; }
+.status-message { 
+  font-size: 12px; 
+  padding: 4px 8px; 
+  border-radius: 6px; 
+  margin: 2px 0;
+  text-align: center;
+  background: #0c0f1a; 
+  border: 1px solid #1f2440; 
+  color: var(--accent);
+}
+.hint { color: var(--muted); font-size: 12px; margin-top: 8px; text-align: center; }
+footer { text-align: center; color: var(--muted); padding: 10px 0 24px; font-size: 12px; }
+
+/* Gaze cursor overlay */
+#gazeCursor {
+  position: fixed;
+  left: 0; top: 0;
+  width: 35px; height: 35px; /* Aumentado para mejor visibilidad */
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  pointer-events: none;
+  border: 3px solid rgba(0, 255, 0, 0.8); /* Cambiado a verde más visible */
+  background: rgba(0, 255, 0, 0.25); /* Verde semi-transparente */
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.4); /* Sombra verde más visible */
+  display: none; /* shown when WS connects */
+  z-index: 9999;
+}
+
+/* Language switcher */
+.language-switcher {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.lang-btn {
+  font-size: 11px;
+  padding: 4px 8px;
+  background: var(--card);
+  color: var(--muted);
+  border: 1px solid #1f2440;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lang-btn:hover {
+  background: var(--accent);
+  color: var(--text);
+}
+
+.lang-btn.active {
+  background: var(--accent);
+  color: var(--text);
+  border-color: var(--accent);
+}
