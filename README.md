@@ -190,18 +190,18 @@ node /mnt/c/sources/dotNet/Test_Tobii/aac-pictos/backend-proxy/server.js
 **Expected result:**
 
 ```text
-🚀 AAC proxy server running on http://localhost:3002
-📋 Available endpoints:
+ AAC proxy server running on http://localhost:3002
+ Available endpoints:
    • GET  /health - Server status
    • GET  /api/test-connection - Test Azure OpenAI connection
    • POST /api/generate-phrase - Generate phrases
-🔧 Configuration:
+ Configuration:
    • Azure OpenAI Endpoint: https://jmfz-aif-test.cognitiveservices.azure.com/
    • Deployment: gpt-4.1-mini
    • API Version: 2025-01-01-preview
-🔄 Initializing Azure OpenAI...
-✅ Azure OpenAI client initialized successfully with API Key
-✅ Azure OpenAI initialized successfully
+ Initializing Azure OpenAI...
+ Azure OpenAI client initialized successfully with API Key
+ Azure OpenAI initialized successfully
 ```
 
 ### Verify the backend
